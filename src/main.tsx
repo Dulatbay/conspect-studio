@@ -6,7 +6,8 @@ import { store } from './redux/store'
 import { SelectedNodeProvider } from './context/SelectedNodeContext'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Flip, ToastContainer } from 'react-toastify'
-import ConspectListPage from './pages/ConspectListPage'
+import ModulesListPage from './pages/ModulesListPage'
+import ModulePage from './pages/ModulePage'
 import ConspectEditorPage from './pages/ConspectEditorPage'
 
 createRoot(document.getElementById('root')!).render(
@@ -27,7 +28,8 @@ createRoot(document.getElementById('root')!).render(
         />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<ConspectListPage />} />
+            <Route path="/" element={<ModulesListPage />} />
+            <Route path="/modules/:moduleId" element={<ModulePage />} />
             <Route path="/editor/:id" element={<ConspectEditorPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

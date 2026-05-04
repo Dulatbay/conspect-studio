@@ -7,6 +7,7 @@ import {
   Save,
   Loader2,
   Sparkles,
+  UploadCloud,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useSelectedNode } from '../context/hooks/context'
@@ -14,12 +15,14 @@ import { useSelectedNode } from '../context/hooks/context'
 interface AppHeaderProps {
   onReset: () => void | Promise<void>
   onRenameTitle?: (next: string) => void
+  onRegenerateClick?: () => void
   isSaving?: boolean
 }
 
 export default function AppHeader({
   onReset,
   onRenameTitle,
+  onRegenerateClick,
   isSaving = false,
 }: AppHeaderProps) {
   const { isSaved, saveFullData, conspectSession } = useSelectedNode()
@@ -62,7 +65,7 @@ export default function AppHeader({
         className="inline-flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm text-ink-300 transition hover:bg-bg-elevated hover:text-ink-100"
       >
         <ArrowLeft size={16} />
-        <span className="hidden sm:inline">All conspects</span>
+        <span className="hidden sm:inline">Modules</span>
       </Link>
 
       <div className="mx-2 h-6 w-px bg-line" />
@@ -99,6 +102,17 @@ export default function AppHeader({
       <SavedChip isSaved={isSaved} isSaving={isSaving} />
 
       <div className="flex items-center gap-1.5">
+        {onRegenerateClick ? (
+          <button
+            type="button"
+            onClick={onRegenerateClick}
+            title="Regenerate from a new file (replaces all content)"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-bg-surface/70 px-3 py-1.5 text-xs text-ink-200 transition hover:border-brand-500/50 hover:bg-brand-500/10 hover:text-brand-200"
+          >
+            <UploadCloud size={12} />
+            <span className="hidden sm:inline">Regenerate</span>
+          </button>
+        ) : null}
         <button
           type="button"
           onClick={() => void handleReset()}

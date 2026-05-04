@@ -1,6 +1,15 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
 import type { BaseNode } from '../../utills/parser/types.ts'
-import type { ConspectDto, ConspectPage } from './types.ts'
+import { moduleApi } from '../module/api.ts'
+import type {
+  ConspectDto,
+  ConspectLanguage,
+  ConspectPage,
+} from './types.ts'
+import {
+  normalizeConspectDto,
+  normalizeConspectPage,
+} from './normalizeConspectFromApi.ts'
 
 const conspectBaseUrl =
   (import.meta.env.VITE_CONSPECT_API_URL as string | undefined)?.replace(
@@ -8,7 +17,11 @@ const conspectBaseUrl =
     ''
   ) ?? 'http://localhost:8090'
 
-type Language = 'KAZ' | 'RU' | 'ENG'
+const languageToAi = (lang?: ConspectLanguage): 'ru' | 'kz' | 'en' => {
+  if (lang === 'KAZ') return 'kz'
+  if (lang === 'ENG') return 'en'
+  return 'ru'
+}
 
 export const conspectApi = createApi({
   reducerPath: 'conspectApi',
@@ -21,6 +34,7 @@ export const conspectApi = createApi({
     >({
       query: ({ page = 0, size = 50 }) =>
         `/api/v1/conspects?page=${page}&size=${size}`,
+      transformResponse: (raw: unknown) => normalizeConspectPage(raw),
       providesTags: (result) =>
         result?.content
           ? [
@@ -34,15 +48,112 @@ export const conspectApi = createApi({
     }),
     getConspect: builder.query<ConspectDto, string>({
       query: (id) => `/api/v1/conspects/${id}`,
+      transformResponse: (raw: unknown) => normalizeConspectDto(raw),
       providesTags: (_r, _e, id) => [{ type: 'Conspect', id }],
     }),
-    createConspect: builder.mutation<ConspectDto, { title?: string }>({
-      query: (body) => ({
-        url: `/api/v1/conspects`,
+    createConspectInModule: builder.mutation<
+      ConspectDto,
+      { moduleId: string; title?: string }
+    >({
+      query: ({ moduleId, title }) => ({
+        url: `/api/v1/modules/${moduleId}/conspects`,
         method: 'POST',
-        body: { title: body.title ?? 'Untitled conspect' },
+        body: { title: title ?? 'Untitled conspect' },
       }),
-      invalidatesTags: [{ type: 'Conspect', id: 'LIST' }],
+      transformResponse: (raw: unknown) => normalizeConspectDto(raw),
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled
+        } catch {
+          /* still refresh module roadmap */
+        }
+        dispatch(
+          moduleApi.util.invalidateTags([
+            { type: 'Module', id: arg.moduleId },
+            { type: 'Module', id: 'LIST' },
+          ])
+        )
+      },
+      invalidatesTags: (result) =>
+        result
+          ? [
+              { type: 'Conspect', id: result.id },
+              { type: 'Conspect', id: 'LIST' },
+            ]
+          : [{ type: 'Conspect', id: 'LIST' }],
+    }),
+    createConspectFromUpload: builder.mutation<
+      ConspectDto,
+      { moduleId: string; file: File; language?: ConspectLanguage }
+    >({
+      query: ({ moduleId, file, language }) => {
+        const form = new FormData()
+        form.append('file', file)
+        if (language) form.append('language', languageToAi(language))
+        return {
+          url: `/api/v1/modules/${moduleId}/conspects/from-upload`,
+          method: 'POST',
+          body: form,
+        }
+      },
+      transformResponse: (raw: unknown) => normalizeConspectDto(raw),
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled
+        } catch {
+          /* refresh module to show ai_error / is_generating */
+        }
+        dispatch(
+          moduleApi.util.invalidateTags([
+            { type: 'Module', id: arg.moduleId },
+            { type: 'Module', id: 'LIST' },
+          ])
+        )
+      },
+      invalidatesTags: (result) =>
+        result
+          ? [
+              { type: 'Conspect', id: result.id },
+              { type: 'Conspect', id: 'LIST' },
+            ]
+          : [{ type: 'Conspect', id: 'LIST' }],
+    }),
+    regenerateConspect: builder.mutation<
+      ConspectDto,
+      { id: string; file: File; language?: ConspectLanguage }
+    >({
+      query: ({ id, file, language }) => {
+        const form = new FormData()
+        form.append('file', file)
+        if (language) form.append('language', languageToAi(language))
+        return {
+          url: `/api/v1/conspects/${id}/regenerate`,
+          method: 'POST',
+          body: form,
+        }
+      },
+      transformResponse: (raw: unknown) => normalizeConspectDto(raw),
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled
+          if (data?.moduleId) {
+            dispatch(
+              moduleApi.util.invalidateTags([
+                { type: 'Module', id: data.moduleId },
+                { type: 'Module', id: 'LIST' },
+              ])
+            )
+          } else {
+            dispatch(moduleApi.util.invalidateTags([{ type: 'Module' }]))
+          }
+        } catch {
+          dispatch(moduleApi.util.invalidateTags([{ type: 'Module' }]))
+        }
+      },
+      invalidatesTags: (_r, _e, { id }) => [
+        { type: 'Conspect', id },
+        { type: 'Conspect', id: 'LIST' },
+      ],
     }),
     updateConspect: builder.mutation<
       ConspectDto,
@@ -50,7 +161,7 @@ export const conspectApi = createApi({
         id: string
         title?: string
         content?: BaseNode
-        language?: Language
+        language?: ConspectLanguage
       }
     >({
       query: ({ id, title, content, language }) => {
@@ -72,6 +183,7 @@ export const conspectApi = createApi({
           body,
         }
       },
+      transformResponse: (raw: unknown) => normalizeConspectDto(raw),
       invalidatesTags: (_r, _e, { id }) => [
         { type: 'Conspect', id },
         { type: 'Conspect', id: 'LIST' },
@@ -82,6 +194,14 @@ export const conspectApi = createApi({
         url: `/api/v1/conspects/${id}`,
         method: 'DELETE',
       }),
+      async onQueryStarted(_id, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled
+        } catch {
+          /* still refresh modules */
+        }
+        dispatch(moduleApi.util.invalidateTags([{ type: 'Module' }]))
+      },
       invalidatesTags: (_r, _e, id) => [
         { type: 'Conspect', id },
         { type: 'Conspect', id: 'LIST' },
@@ -94,7 +214,9 @@ export const {
   useListConspectsQuery,
   useGetConspectQuery,
   useLazyGetConspectQuery,
-  useCreateConspectMutation,
+  useCreateConspectInModuleMutation,
+  useCreateConspectFromUploadMutation,
+  useRegenerateConspectMutation,
   useUpdateConspectMutation,
   useDeleteConspectMutation,
 } = conspectApi

@@ -63,13 +63,39 @@ sequenceDiagram
 - **Код:** `202 Accepted`
 - **Тело:** `multipart/form-data`
 
-| Поле          | Тип     | Обязательность | Описание |
-|---------------|---------|------------------|----------|
-| `file`        | файл    | нет*             | PDF, XLSX, DOCX, TXT/MD |
-| `lesson_text` | string  | нет*             | Текст урока |
-| `language`    | string  | нет              | `ru` \| `kz` \| `en` — язык конспекта |
+| Поле               | Тип     | Обязательность | Описание |
+|--------------------|---------|------------------|----------|
+| `file`             | файл    | нет*             | PDF, XLSX, DOCX, TXT/MD |
+| `lesson_text`      | string  | нет*             | Текст урока |
+| `language`         | string  | нет              | `ru` \| `kz` \| `en` — язык конспекта |
+| `callback_url`     | string  | нет              | Если указан — после завершения джоба сервис POST'нет результат на этот URL |
+| `callback_secret`  | string  | нет              | Будет передан в заголовке `X-Callback-Secret` колбэка для проверки на стороне получателя |
 
 \* Нужен **хотя бы один** из: `file` (непустой) или непустой `lesson_text`. Иначе `400`.
+
+#### Колбэк (если передан `callback_url`)
+
+После того как джоб переходит в `completed` или `failed`, воркер POST'ит на `callback_url` JSON:
+
+```json
+{
+  "job_id": "550e8400-e29b-41d4-a716-446655440000",
+  "status": "completed",
+  "result": {
+    "title": "…",
+    "conspect_document": { "nodeType": "STACK", "children": [ … ] },
+    "source_extraction_method": "pdf_mixed",
+    "extracted_char_count": 12000,
+    "warnings": []
+  },
+  "error": null
+}
+```
+
+При `failed` — `result: null`, `error: "…"`. Заголовок `Content-Type: application/json`.
+Если задан `callback_secret`, добавляется заголовок `X-Callback-Secret`.
+
+При нон-2xx ответе и сетевых ошибках выполняется до 3 попыток с экспоненциальной задержкой; джоб остаётся в стейте AI и доступен через `GET /api/v1/jobs/{job_id}` (фолбэк-polling).
 
 **Ответ (`ConspectJobCreateResponse`):**
 
