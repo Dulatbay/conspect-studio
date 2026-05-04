@@ -1,0 +1,154 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: 'Inter';
+  src: url('../fonts/inter/Inter_18pt-Regular.ttf') format('truetype');
+  font-weight: 400 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Inter';
+  src: url('../fonts/inter/Inter_18pt-Black.ttf') format('truetype');
+  font-weight: 700 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --bg-base: #0a0a0f;
+  --bg-subtle: #12121a;
+  --bg-surface: #171723;
+  --bg-elevated: #1f1f2e;
+  --brand: #5348f2;
+  --accent: #10c9a3;
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
+  color: #f5f5fa;
+  background: var(--bg-base);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Thin, elegant scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.22);
+  background-clip: padding-box;
+}
+
+/* react-split gutters */
+.split {
+  display: flex;
+}
+.gutter {
+  position: relative;
+  background: transparent;
+  cursor: ew-resize;
+  transition: background 0.2s ease;
+}
+.gutter::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+  transition: background 0.2s ease, width 0.2s ease;
+}
+.gutter:hover::before {
+  background: rgba(109, 112, 255, 0.6);
+  width: 3px;
+}
+.gutter.gutter-horizontal {
+  cursor: col-resize;
+}
+
+/* Focus ring */
+:where(input, textarea, select, button):focus-visible {
+  outline: 2px solid rgba(109, 112, 255, 0.6);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Selection */
+::selection {
+  background: rgba(109, 112, 255, 0.35);
+  color: #fff;
+}
+
+/* Utility: glass panel */
+.glass {
+  background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.02) 0%,
+      rgba(255, 255, 255, 0) 100%
+    ),
+    rgba(20, 20, 29, 0.7);
+  backdrop-filter: saturate(160%) blur(12px);
+  -webkit-backdrop-filter: saturate(160%) blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Utility: canvas dotted grid */
+.canvas-grid {
+  background-color: #0a0a0f;
+  background-image: radial-gradient(
+    rgba(255, 255, 255, 0.08) 1px,
+    transparent 1px
+  );
+  background-size: 24px 24px;
+  background-position: 0 0;
+}
+
+/* Utility: shimmer for skeletons */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.03) 0%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.03) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s linear infinite;
+}
